@@ -1,7 +1,3 @@
-provider "aws" {
-  region = "us-west-2"
-}
-
 resource "aws_vpc" "terraform-pro" {
   cidr_block       = "10.0.0.0/18"
   instance_tenancy = "default"
