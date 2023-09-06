@@ -20,6 +20,18 @@ resource "aws_security_group" "allow_HTTP" {
     cidr_blocks = [aws_vpc.terraform-pro.cidr_block]
   }
 
+   ingress {
+    description = "Allow HTTP"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.terraform-pro.cidr_block]
+  }
+
+
+
+
+
   ingress {
     description = "Allow SSH"
     from_port   = 22
