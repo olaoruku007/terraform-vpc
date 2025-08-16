@@ -1,3 +1,15 @@
+# terraform { 
+#   cloud { 
+    
+#     organization = "zthcloud" 
+
+#     workspaces { 
+#       name = "terraform-new" 
+#     } 
+#   } 
+# }
+
+
 resource "aws_vpc" "terraform-pro" {
   cidr_block = var.vpc_cidr
   #cidr_block       = "10.1.0.0/16"
