@@ -18,7 +18,7 @@ resource "aws_vpc" "terraform-pro" {
 }
 
 resource "aws_security_group" "allow_HTTP" {
-  name        = "allow_HTTP"
+  name        = "allow_HTTP and SSH"
   description = "Allow HTTP inbound traffic"
   vpc_id      = aws_vpc.terraform-pro.id
 
@@ -55,22 +55,21 @@ resource "aws_security_group" "allow_HTTP" {
     cidr_blocks = [aws_vpc.terraform-pro.cidr_block]
   }
 
-  # egress {
-  #   from_port   = 0
-  #   to_port     = 0
-  #   protocol    = "-1"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-}
-#   tags = {
-#     Name = "Allow All Traffic"
-#   }
-# }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  
+}  
+
 
 resource "aws_subnet" "terraform-pro1" {
   vpc_id                  = aws_vpc.terraform-pro.id
   cidr_block              = var.public_subnet_cidrs[0]
-  availability_zone       = "eu-central-1a"
+  availability_zone       = var.az[0]
   map_public_ip_on_launch = true
   tags = {
     Name = "${var.Environment}-terraform-pro-public1"
@@ -81,7 +80,7 @@ resource "aws_subnet" "terraform-pro2" {
   vpc_id     = aws_vpc.terraform-pro.id
   cidr_block = var.public_subnet_cidrs[1]
   #cidr_block              = "10.1.8.0/21"
-  availability_zone       = "eu-central-1b"
+  availability_zone       = var.az[1]
   map_public_ip_on_launch = true
   tags = {
     Name = "${var.Environment}-terraform-pro-public2"
@@ -91,7 +90,7 @@ resource "aws_subnet" "terraform-pro2" {
 resource "aws_subnet" "terraform-pro3" {
   vpc_id                  = aws_vpc.terraform-pro.id
   cidr_block              = "10.1.16.0/21"
-  availability_zone       = "eu-central-1a"
+  availability_zone       = var.az1[0]
   map_public_ip_on_launch = false
   tags = {
     Name = "${var.Environment}-terraform-pro-private1"
@@ -101,12 +100,25 @@ resource "aws_subnet" "terraform-pro3" {
 resource "aws_subnet" "terraform-pro4" {
   vpc_id                  = aws_vpc.terraform-pro.id
   cidr_block              = "10.1.24.0/21"
-  availability_zone       = "eu-central-1b"
+  availability_zone       = var.az1[1]
   map_public_ip_on_launch = false
   tags = {
     Name = "${var.Environment}-terraform-pro-private2"
   }
 }
+
+
+resource "aws_subnet" "terraform-pro5" {
+  vpc_id                  = aws_vpc.terraform-pro.id
+  cidr_block              = "10.1.32.0/21"
+  availability_zone       = var.az[1]
+  map_public_ip_on_launch = true
+  tags = {
+    Name = "${var.Environment}-terraform-pro-public3"
+  }
+}
+
+
 
 
 resource "aws_internet_gateway" "terraform-pro-igw" {
@@ -138,9 +150,15 @@ resource "aws_route_table_association" "public1" {
 }
 
 resource "aws_route_table_association" "public2" {
-  subnet_id      = aws_subnet.terraform-pro2.id
+  subnet_id      = aws_subnet.terraform-pro4.id
   route_table_id = aws_route_table.terraform-pro-RT.id
 }
+
+resource "aws_route_table_association" "public3" {
+  subnet_id      = aws_subnet.terraform-pro5.id
+  route_table_id = aws_route_table.terraform-pro-RT.id
+}
+
 
 
 # Look up subnets by name
