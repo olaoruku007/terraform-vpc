@@ -1,16 +1,19 @@
 resource "aws_vpc" "terraform-pro" {
-  cidr_block       = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr
+  #cidr_block       = "10.1.0.0/16"
   instance_tenancy = "default"
 
-  tags = {
-    name = "terraform-pro-vpc"
-  }
 }
 
 resource "aws_security_group" "allow_HTTP" {
   name        = "allow_HTTP"
   description = "Allow HTTP inbound traffic"
   vpc_id      = aws_vpc.terraform-pro.id
+
+  tags = {
+    Name = "${var.Environment}-terraform-pro-SG"
+  }
+
 
   ingress {
     description = "Allow HTTP"
@@ -20,7 +23,7 @@ resource "aws_security_group" "allow_HTTP" {
     cidr_blocks = [aws_vpc.terraform-pro.cidr_block]
   }
 
-   ingress {
+  ingress {
     description = "Allow HTTP"
     from_port   = 8080
     to_port     = 8080
@@ -40,55 +43,56 @@ resource "aws_security_group" "allow_HTTP" {
     cidr_blocks = [aws_vpc.terraform-pro.cidr_block]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "Allow All Traffic"
-  }
+  # egress {
+  #   from_port   = 0
+  #   to_port     = 0
+  #   protocol    = "-1"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
 }
-
-resource "aws_subnet" "terraform-pro" {
-  vpc_id                  = aws_vpc.terraform-pro.id
-  cidr_block              = "10.0.0.0/21"
-  availability_zone       = "us-west-1a"
-  map_public_ip_on_launch = true
-  tags = {
-    name = "terraform-pro-public1"
-  }
-}
+#   tags = {
+#     Name = "Allow All Traffic"
+#   }
+# }
 
 resource "aws_subnet" "terraform-pro1" {
   vpc_id                  = aws_vpc.terraform-pro.id
-  cidr_block              = "10.0.8.0/21"
-  availability_zone       = "us-west-1b"
+  cidr_block              = var.public_subnet_cidrs[0]
+  availability_zone       = "eu-central-1a"
   map_public_ip_on_launch = true
   tags = {
-    name = "terraform-pro-public2"
+    Name = "${var.Environment}-terraform-pro-public1"
   }
 }
 
 resource "aws_subnet" "terraform-pro2" {
-  vpc_id                  = aws_vpc.terraform-pro.id
-  cidr_block              = "10.0.16.0/21"
-  availability_zone       = "us-west-1a"
-  map_public_ip_on_launch = false
+  vpc_id     = aws_vpc.terraform-pro.id
+  cidr_block = var.public_subnet_cidrs[1]
+  #cidr_block              = "10.1.8.0/21"
+  availability_zone       = "eu-central-1b"
+  map_public_ip_on_launch = true
   tags = {
-    name = "terraform-pro-private1"
+    Name = "${var.Environment}-terraform-pro-public2"
   }
 }
 
 resource "aws_subnet" "terraform-pro3" {
   vpc_id                  = aws_vpc.terraform-pro.id
-  cidr_block              = "10.0.24.0/21"
-  availability_zone       = "us-west-1b"
+  cidr_block              = "10.1.16.0/21"
+  availability_zone       = "eu-central-1a"
   map_public_ip_on_launch = false
   tags = {
-    name = "terraform-pro-private1"
+    Name = "${var.Environment}-terraform-pro-private1"
+  }
+}
+
+resource "aws_subnet" "terraform-pro4" {
+  vpc_id                  = aws_vpc.terraform-pro.id
+  cidr_block              = "10.1.24.0/21"
+  availability_zone       = "eu-central-1b"
+  map_public_ip_on_launch = false
+  tags = {
+    Name = "${var.Environment}-terraform-pro-private2"
   }
 }
 
@@ -97,7 +101,7 @@ resource "aws_internet_gateway" "terraform-pro-igw" {
   vpc_id = aws_vpc.terraform-pro.id
 
   tags = {
-    Name = "terraform-pro-igw"
+    Name = "${var.Environment}-terraform-pro-igw"
   }
 }
 
@@ -111,19 +115,46 @@ resource "aws_route_table" "terraform-pro-RT" {
   }
 
   tags = {
-    Name = "terraform-pro-RT"
+    Name = "${var.Environment}-terraform-pro-RT"
   }
 }
 
 resource "aws_route_table_association" "public1" {
-  subnet_id      = aws_subnet.terraform-pro.id
+  subnet_id      = aws_subnet.terraform-pro1.id
   route_table_id = aws_route_table.terraform-pro-RT.id
+
 }
 
 resource "aws_route_table_association" "public2" {
-  subnet_id      = aws_subnet.terraform-pro1.id
+  subnet_id      = aws_subnet.terraform-pro2.id
   route_table_id = aws_route_table.terraform-pro-RT.id
 }
+
+
+# Look up subnets by name
+# data "aws_subnet" "subnet_id" {
+#   for_each = toset([
+#     "terraform-pro", # first subnet name
+#     "terraform-pro1"  # second subnet name
+#   ])
+
+#   filter {
+#     name   = "tag:Name"
+#     values = [each.key]
+#   }
+# }
+
+# # Launch EC2 instances in each subnet
+# resource "aws_instance" "multi_subnet" {
+#   for_each      = data.aws_subnet.subnet_id
+#   ami           = "ami-0474a0658ad946d8e" # Replace with a valid AMI
+#   instance_type = "t2.large"
+#   subnet_id     = each.value.id
+
+#   tags = {
+#     Name = "ec2-${each.key}"
+#   }
+# }
 
 
 
